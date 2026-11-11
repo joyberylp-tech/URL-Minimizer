@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>URL Shortener</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 480px; margin: 12vh auto; padding: 0 16px; color: #222; }
+  h2 { margin-bottom: 16px; }
+  input { width: 100%; box-sizing: border-box; padding: 10px; margin-bottom: 8px; font-size: 16px; border: 1px solid #bbb; border-radius: 6px; }
+  button { padding: 10px 16px; font-size: 16px; border: 0; border-radius: 6px; background: #2563eb; color: #fff; cursor: pointer; }
+  #result { margin-top: 20px; }
+  .err { color: #b91c1c; }
+  .box { display: flex; gap: 8px; align-items: center; background: #f1f5f9; padding: 10px; border-radius: 6px; }
+  .box a { flex: 1; word-break: break-all; }
+  .box button { background: #475569; padding: 6px 12px; font-size: 14px; }
+</style>
+</head>
+<body>
+<h2>URL Shortener</h2>
+<input id="url" placeholder="Enter URL" autofocus>
+<input id="alias" placeholder="Custom alias (optional)">
+<button id="go">Shorten</button>
+<div id="result"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+async function shorten() {
+  const out = $('result');
+  out.textContent = '';
+  try {
+    const res = await fetch('/api/shorten', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: $('url').value, alias: $('alias').value })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    const box = document.createElement('div');
+    box.className = 'box';
+    const a = Object.assign(document.createElement('a'), { href: data.shortUrl, textContent: data.shortUrl, target: '_blank' });
+    const copy = Object.assign(document.createElement('button'), { textContent: 'Copy' });
+    copy.onclick = () => navigator.clipboard.writeText(data.shortUrl).then(() => copy.textContent = 'Copied');
+    box.append(a, copy);
+    out.append(box);
+  } catch (e) {
+    out.innerHTML = '<p class="err"></p>';
+    out.firstChild.textContent = e.message;
+  }
+}
+
+$('go').onclick = shorten;
+document.addEventListener('keydown', e => { if (e.key === 'Enter') shorten(); });
+</script>
+</body>
+</html>
